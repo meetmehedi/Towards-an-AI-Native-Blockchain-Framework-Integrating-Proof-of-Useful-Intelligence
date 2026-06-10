@@ -1,0 +1,17 @@
+{
+  "poui": {
+    "total_excluded": 15,
+    "exclusion_rate_pct": 100.0,
+    "mean_epoch_to_exclusion": 2.53,
+    "min_epoch_to_exclusion": 1,
+    "mechanism": "Automatic Trust Score threshold"
+  },
+  "pos": {
+    "total_excluded": 13,
+    "exclusion_rate_pct": 86.67,
+    "mean_epoch_to_exclusion": 568.3846153846154,
+    "min_epoch_to_exclusion": 47,
+    "mechanism": "Governance vote (p=0.02/epoch)"
+  },
+  "speedup_factor": 224.65795074490728
+}

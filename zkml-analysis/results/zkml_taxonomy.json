@@ -1,0 +1,136 @@
+{
+  "taxonomy": [
+    {
+      "class_id": "V-I",
+      "name": "Under-Range Constraint (URC)",
+      "description": "A signal wire w in the circuit has its range constraint underspecified. The prover can assign w a value outside its intended domain (e.g., w > 2^k for a k-bit signal) without causing a constraint failure. In ZKML circuits, this most commonly affects quantized activation values (e.g., ReLU output clamped to [0, 255] in int8 quantization).",
+      "formal_condition": "\u2203 wire w with intended domain D_w = [0, 2^k - 1] where the circuit only asserts: w * (w - 1) = 0 (binary check) but NOT: w \u2208 [0, 2^k - 1] via range-check gates. Then prover can set w = 2^k + \u03b4 for any \u03b4, satisfying all constraints.",
+      "soundness_violation": "Validator submits y* = f_fake(x) where intermediate activations use overflow values. The verifier's constraints pass (no range check), but the computation is not a valid execution of f(x).",
+      "affected_layers": [
+        "ReLU",
+        "Sigmoid",
+        "Softmax",
+        "Quantized Conv",
+        "Quantized Linear"
+      ],
+      "exploit_complexity": "Low",
+      "detectability": "Medium",
+      "mitigation": "CONSTRAINT TEMPLATE (Range Check):\n  For each wire w with domain [0, B]:\n    (1) Decompose w into k bits: w = \u03a3 b\u1d62 \u00b7 2\u2071\n    (2) Assert each bit: b\u1d62 \u00b7 (b\u1d62 - 1) = 0\n    (3) Assert upper bound: B - w \u2265 0 (via auxiliary range-check circuit)\n  EZKL implementation: use lookup tables for range enforcement.",
+      "poc_available": true,
+      "cve_analogues": [
+        "Integer overflow in Solidity (SWC-101 analogue)"
+      ]
+    },
+    {
+      "class_id": "V-II",
+      "name": "Non-Deterministic Witness Assignment (NDWA)",
+      "description": "The circuit has multiple valid witness assignments for the same input x, all satisfying all constraints, but producing different outputs y. This occurs when the circuit models a non-injective function without uniqueness constraints \u2014 common in argmax layers and attention mechanisms.",
+      "formal_condition": "\u2203 input x, witnesses w\u2081 \u2260 w\u2082 such that:\n  C(x, w\u2081) is satisfiable with output y\u2081\n  C(x, w\u2082) is satisfiable with output y\u2082\n  y\u2081 \u2260 y\u2082\nThen the circuit is unsound: multiple valid outputs exist for same input.",
+      "soundness_violation": "Malicious validator picks the witness assignment w\u2082 that maximizes their Trust Score (highest accuracy claim) while using a fake computation.",
+      "affected_layers": [
+        "ArgMax",
+        "TopK",
+        "Softmax (ties)",
+        "Attention (unnormalized)",
+        "Batch Norm"
+      ],
+      "exploit_complexity": "Medium",
+      "detectability": "Hard",
+      "mitigation": "CONSTRAINT TEMPLATE (Uniqueness Enforcement):\n  For argmax output i* = argmax(logits):\n    (1) Assert: logits[i*] \u2265 logits[j] + \u03b5 for all j \u2260 i*\n    (2) Assert indicator: \u03b4\u1d62 \u2208 {0,1}, \u03a3\u03b4\u1d62 = 1 (one-hot check)\n    (3) Assert: i* = \u03a3 i \u00b7 \u03b4\u1d62 (index consistency)\n  This eliminates non-determinism by enforcing strict ordering.",
+      "poc_available": false,
+      "cve_analogues": [
+        "Reentrancy via state non-determinism (analogue)"
+      ]
+    },
+    {
+      "class_id": "V-III",
+      "name": "Missing Intermediate Constraint (MIC)",
+      "description": "Intermediate computation results are computed correctly by an honest prover but their correctness is never asserted in the constraint system. A malicious prover can set intermediate wires to arbitrary values while keeping inputs and outputs consistent \u2014 effectively 'skipping' layers of the network.",
+      "formal_condition": "Let f = f\u2099 \u2218 f\u2099\u208b\u2081 \u2218 ... \u2218 f\u2081 be a composed neural network.\nIf the circuit only asserts: C_out(x, y) without asserting C_layer_k for some intermediate layer k, then the prover can set:\n  h_k = arbitrary value (not f_k(h_{k-1}))\n  h_{k+1} = f_{k+1}(h_k) ... h_n = y*\nThe circuit accepts y* even though layer k was bypassed.",
+      "soundness_violation": "Validator submits y* as if running model f, but actually runs a simplified model that skips expensive layers (e.g., transformer blocks), achieving low computational cost while claiming full model credit.",
+      "affected_layers": [
+        "All intermediate layers",
+        "Residual connections",
+        "Layer Norm",
+        "Dropout"
+      ],
+      "exploit_complexity": "High",
+      "detectability": "Hard",
+      "mitigation": "CONSTRAINT TEMPLATE (Layer Consistency):\n  For each layer k with input h\u2096 and output h\u2096\u208a\u2081:\n    Assert: h\u2096\u208a\u2081 = f\u2096(h\u2096) via a dedicated sub-circuit\n  Implementation: Use recursive SNARK composition (e.g., Nova, Halo2)\n  or EZKL's full trace enforcement mode (--full-witness flag).",
+      "poc_available": false,
+      "cve_analogues": [
+        "Logic bomb via dead code (analogue)"
+      ]
+    },
+    {
+      "class_id": "V-IV",
+      "name": "Floating-Point Approximation Exploit (FPAE)",
+      "description": "ZK circuits operate over finite fields (typically Fp for large prime p). Neural networks use floating-point arithmetic. The quantization/dequantization step introduces approximation gaps that a malicious prover can exploit: by choosing quantization parameters (scale, zero_point) adversarially, they can shift model outputs while remaining within the circuit's approximation tolerance bounds.",
+      "formal_condition": "Let Q: \u211d \u2192 \u2124 be quantization with scale s and zero_point z.\nThe circuit checks: |Q_circuit(x) - Q_honest(x)| \u2264 \u03b5 (tolerance).\nIf the adversary controls s and z, they can choose:\n  s* = s + \u03b4 such that Q*(x) \u2260 Q(x) but |Q*(x) - Q(x)| \u2264 \u03b5\n  This shifts logits systematically while passing the tolerance check.",
+      "soundness_violation": "Validator manipulates quantization parameters to boost claimed accuracy metric while running a degraded model. The systematic shift can change classification outcomes for targeted input classes.",
+      "affected_layers": [
+        "Quantization Layer",
+        "Dequantization",
+        "Int8 Conv",
+        "Int4 Linear"
+      ],
+      "exploit_complexity": "High",
+      "detectability": "Medium",
+      "mitigation": "CONSTRAINT TEMPLATE (Fixed Quantization Parameters):\n  (1) Commit to quantization parameters: H(s, z) published on-chain\n  (2) Assert in circuit: s = s_committed, z = z_committed\n  (3) Use lookup tables for quantized ops (eliminates approximation gap)\n  (4) Bound tolerance tightly: \u03b5 < 0.5 (rounding only, no systematic shift)",
+      "poc_available": false,
+      "cve_analogues": [
+        "Numerical precision exploit in oracle price manipulation"
+      ]
+    },
+    {
+      "class_id": "V-V",
+      "name": "Commitment-Output Mismatch (COM)",
+      "description": "The validator commits to a model hash H(\u03b8) on-chain but the ZKML circuit does not verify that the weights used in the proof match H(\u03b8). A malicious validator can thus generate a proof using a different (weaker) model \u03b8* while claiming credit for the committed model \u03b8.",
+      "formal_condition": "Let H: \u0398 \u2192 {0,1}^256 be a collision-resistant hash of model weights.\nThe validator publishes c = H(\u03b8) on-chain.\nIf the circuit does NOT assert: weights_in_proof = \u03b8 where H(\u03b8) = c,\nthen the prover can use weights \u03b8* \u2260 \u03b8 to generate a valid proof.",
+      "soundness_violation": "Validator runs a tiny fast model \u03b8* (e.g., 1-layer MLP) instead of the committed large model \u03b8 (e.g., ResNet-50), generates a valid ZK proof for \u03b8*, and submits it as proof of running \u03b8. The verifier cannot distinguish.",
+      "affected_layers": [
+        "Weight Loading",
+        "Model Initialization",
+        "All Weight Tensors"
+      ],
+      "exploit_complexity": "Low",
+      "detectability": "Easy",
+      "mitigation": "CONSTRAINT TEMPLATE (Weight Commitment Verification):\n  (1) Merkle-commit all weight tensors: root = MerkleRoot({W\u2096})\n  (2) Publish root on-chain at registration\n  (3) In each proof: assert Merkle path for each weight tensor used\n  (4) Assert: MerkleRoot(weights_in_proof) = committed_root\n  EZKL supports this via --witness-includes-weights mode.",
+      "poc_available": true,
+      "cve_analogues": [
+        "Model substitution attack",
+        "Oracle manipulation via model swap"
+      ]
+    }
+  ],
+  "soundness_conditions": {
+    "V-I": "\u2200 wire w \u2208 activation layer: assert w \u2208 [0, 2^k - 1] via range-check subcircuit",
+    "V-II": "\u2200 argmax output i*: assert uniqueness via strict ordering constraints",
+    "V-III": "\u2200 layer k: assert h_{k+1} = f_k(h_k) via dedicated per-layer subcircuit",
+    "V-IV": "Commit to (s, z) on-chain; assert (s, z) = (s_committed, z_committed) in proof",
+    "V-V": "Assert MerkleRoot(weights_in_proof) = committed_root for every proof"
+  },
+  "poc_results": [
+    {
+      "poc_id": "V-I-PoC-001",
+      "class": "V-I",
+      "title": "Under-Range Constraint Exploit on int8 ReLU",
+      "exploit_successful": true,
+      "honest_outputs": {
+        "-50.0": 0,
+        "30.0": 30,
+        "100.0": 100,
+        "200.0": 200
+      },
+      "exploited_outputs": {
+        "-50.0": 300,
+        "30.0": 0,
+        "100.0": 300,
+        "200.0": 0
+      },
+      "mitigation_applied": false,
+      "zk_proof_status": "ACCEPTS_FORGED_OUTPUT"
+    }
+  ],
+  "rq2_answer": "Five classes of underconstrained ZKML circuit vulnerabilities identified in the PoUI validator context. Necessary and sufficient conditions derived for each class. Class V-I and V-V exploit PoCs constructed. Constraint templates provided for all five classes."
+}

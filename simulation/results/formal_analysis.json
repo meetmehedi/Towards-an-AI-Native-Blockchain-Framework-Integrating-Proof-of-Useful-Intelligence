@@ -1,0 +1,96 @@
+{
+  "theorem_1_bounds": {
+    "T_max_theoretical": 0.5,
+    "T_max_computed": 0.499995,
+    "T_min_practical": -3.572327,
+    "T_min_theoretical": "-\u221e (uptime \u2192 0)"
+  },
+  "expected_scores": {
+    "E_honest_T": 0.246403,
+    "E_malicious_T": -0.511859,
+    "gap_honest_minus_malicious": 0.758262
+  },
+  "theorem_2_sybil_resistance": {
+    "E_honest_score_per_epoch": 0.246403,
+    "E_sybil_score_per_epoch": -0.478873,
+    "gap_honest_minus_sybil": 0.725276,
+    "sybil_resistant": "True",
+    "condition": "\u03b3\u00b7E[S] > \u03b1\u00b7(E[A\u00b2_sybil] - E[A\u00b2_honest])\u00b7E[e^{-\u03bbL}]",
+    "condition_satisfied": "True",
+    "estimated_epochs_to_exclusion": null
+  },
+  "theorem_3_non_gameability": {
+    "adversary_optimal_accuracy": 1.0,
+    "adversary_optimal_score": 0.303265,
+    "optimal_strategy": "genuine_computation",
+    "proof": "The score function \u03b1\u00b7A\u00b2\u00b7e^{-\u03bbL} is monotonically increasing in A. The slash penalty \u03b3\u00b7p_detect creates a discontinuous cost at A < \u03c4. The unique Nash equilibrium is A_t = true_accuracy (dominant strategy)."
+  },
+  "theorem_4_convergence": {
+    "mu_malicious_per_epoch": -0.511859,
+    "sigma_malicious_per_epoch": 0.715578,
+    "K_star_simple_bound": 1,
+    "clt_exclusion_probability_by_epoch": [
+      {
+        "epoch": 1,
+        "P_excluded": 0.5066
+      },
+      {
+        "epoch": 2,
+        "P_excluded": 0.6976
+      },
+      {
+        "epoch": 3,
+        "P_excluded": 0.7983
+      },
+      {
+        "epoch": 4,
+        "P_excluded": 0.8602
+      },
+      {
+        "epoch": 5,
+        "P_excluded": 0.901
+      },
+      {
+        "epoch": 6,
+        "P_excluded": 0.9288
+      },
+      {
+        "epoch": 7,
+        "P_excluded": 0.9483
+      },
+      {
+        "epoch": 8,
+        "P_excluded": 0.9621
+      },
+      {
+        "epoch": 9,
+        "P_excluded": 0.9721
+      },
+      {
+        "epoch": 10,
+        "P_excluded": 0.9794
+      },
+      {
+        "epoch": 11,
+        "P_excluded": 0.9847
+      },
+      {
+        "epoch": 12,
+        "P_excluded": 0.9886
+      },
+      {
+        "epoch": 13,
+        "P_excluded": 0.9915
+      },
+      {
+        "epoch": 14,
+        "P_excluded": 0.9936
+      },
+      {
+        "epoch": 15,
+        "P_excluded": 0.9952
+      }
+    ],
+    "interpretation": "A malicious node has expected score \u03bc=-0.5119 per epoch. Simple bound gives K*=1 epochs to exclusion. CLT gives probabilistic bound for exact confidence levels."
+  }
+}
