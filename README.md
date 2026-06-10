@@ -2,8 +2,7 @@
 
 This repository contains the official codebase, simulation engines, security taxonomy, post-quantum cryptographic benchmarks, and the IEEE TDSC manuscript for our research proposal: **"Towards an AI-Native Blockchain Framework: Integrating Proof of Useful Intelligence, Zero-Knowledge Machine Learning Security, and Post-Quantum Cryptography"**.
 
-Principal Investigator: **Prof. Dr. Md. Abdul Based**  
-Team Lead: **Md. Mehedi Hasan**
+Authors: **Md. Mehedi Hasan**, **Asraful Islam Sharthak**, and **Prof. Dr. Md. Abdul Based**, Principal Investigator
 
 ---
 
