@@ -85,15 +85,15 @@ ax2.text(0.97, 0.92, "ML-DSA-44\nFASTER than Ed25519\nfor verify!",
 ax3 = fig.add_subplot(gs[0, 2])
 tps_levels = ["100 TPS", "1,000 TPS", "10,000 TPS"]
 overhead_naive = [355.08, 355.08, 355.08]       # KB — TPS doesn't change per-block sig overhead
-overhead_m1    = [202.4/1, 202.4/1, 202.4/1]    # With aggregate signatures
-overhead_m3    = [216.9, 216.9, 216.9]           # With Merkle
+overhead_m1    = [202.4/1, 202.4/1, 202.4/1]    # With STARK/Merkle aggregation
+overhead_m3    = [216.9, 216.9, 216.9]           # With standard Merkle batching
 
 x = np.arange(len(tps_levels))
 w = 0.25
 ax3.bar(x - w, overhead_naive, w, label="Naïve", color=C_MAL, alpha=0.8, edgecolor=EDGE)
-ax3.bar(x,     overhead_m1,    w, label="M1 Aggregate", color=C_ACCENT, alpha=0.8, edgecolor=EDGE)
+ax3.bar(x,     overhead_m1,    w, label="M1 STARK Agg.", color=C_ACCENT, alpha=0.8, edgecolor=EDGE)
 ax3.bar(x + w, overhead_m3,    w, label="M3 Merkle", color=C_AMBER, alpha=0.8, edgecolor=EDGE)
-ax3.set_title("ML-DSA-44 Block Overhead\n(N=100 validators)", fontweight="bold", fontsize=10)
+ax3.set_title("ML-DSA-44 BFT Consensus Overhead\n(N=100 validators, constant across TPS)", fontweight="bold", fontsize=9)
 ax3.set_ylabel("Overhead (KB/block)")
 ax3.set_xticks(x); ax3.set_xticklabels(tps_levels, fontsize=8)
 ax3.legend(fontsize=7)
@@ -133,7 +133,7 @@ ax6 = fig.add_subplot(gs[1, 2])
 ax6.axis("off")
 mit_data = [
     ["ID", "Strategy", "Reduction", "Feasibility"],
-    ["M1", "Aggregate Sigs", "~100×", "2025-2027"],
+    ["M1", "STARK Attestations", "~100×", "Medium-term"],
     ["M2", "Hybrid (Layered)", "~80%", "Immediate"],
     ["M3", "Merkle Batching", "~log(n)×", "Medium-term"],
     ["M4", "FPGA/ASIC", "10-50×", "2027+"],
